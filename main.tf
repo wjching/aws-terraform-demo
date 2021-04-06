@@ -82,7 +82,7 @@ resource "aws_security_group" "allow_web_ssh" {
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["118.189.0.0/16","116.206.0.0/16","223.25.0.0/16"]
   }
 
     ingress {
@@ -101,16 +101,15 @@ resource "aws_security_group" "allow_web_ssh" {
   }
 
   tags = {
-    Name = "allow_web"
+    Name = "allow_web_ssh"
   }
 }
 
-#Create ALB 
+#Create NLB 
 resource "aws_lb" "demo" {
-  name               = "demo-alb"
+  name               = "demo-nlb"
   internal           = false
-  load_balancer_type = "application"
-  security_groups    = [aws_security_group.allow_web_ssh.id]
+  load_balancer_type = "network"
   subnets            = [aws_subnet.demo-subnet-public.id]
 
   tags = {
@@ -118,16 +117,16 @@ resource "aws_lb" "demo" {
   }
 }
 
-#ALB Target Group for HTTP
+#NLB Target Group for HTTP
 resource "aws_lb_target_group" "demo_http" {
   name     = "demo-http-lb-tg"
   port     = 80
-  protocol = "HTTP"
+  protocol = "TCP"
   vpc_id   = aws_vpc.demo-vpc.id
 
 }
 
-#ALB Target Group for SSH
+#NLB Target Group for SSH
 resource "aws_lb_target_group" "demo_ssh" {
   name     = "demo-ssh-lb-tg"
   port     = 22
@@ -135,15 +134,15 @@ resource "aws_lb_target_group" "demo_ssh" {
   vpc_id   = aws_vpc.demo-vpc.id
 }
 
-/* #ALB Forward Action Listener for HTTP
+#BLB Forward Action Listener for HTTP
 resource "aws_lb_listener" "demo_http" {
   load_balancer_arn = aws_lb.demo.arn
   port              = "80"
-  protocol          = "HTTP"
+  protocol          = "TCP"
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.demo.arn
+    target_group_arn = aws_lb_target_group.demo_http.arn
   }
 }
 
@@ -155,9 +154,9 @@ resource "aws_lb_listener" "demo_ssh" {
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.demo.arn
+    target_group_arn = aws_lb_target_group.demo_ssh.arn
   }
-} */
+}
 
  #Register EC2 with ALB Target Group HTTP
 resource "aws_lb_target_group_attachment" "demo_http" {
@@ -180,11 +179,22 @@ resource "aws_network_interface" "docker-server-nic" {
   security_groups = [aws_security_group.allow_web_ssh.id]
 }
 
+#EIP for NAT Gateway use
+resource "aws_eip" "natgw" {
+  vpc      = true
+}
+
+#Provision NAT Gateway for internet access on Private Subnet
+resource "aws_nat_gateway" "gw" {
+  allocation_id = aws_eip.natgw.id
+  subnet_id     = aws_subnet.demo-subnet-private.id
+}
+
 #Provision Ubuntu Server
 resource "aws_instance" "docker-instance"{
     ami = "ami-042e8287309f5df03"
     instance_type = "t2.micro"
-    availability_zone = "us-east-1a"
+    availability_zone = "us-east-1b"
     key_name = "demo-key"
 
      network_interface {
