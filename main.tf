@@ -56,7 +56,7 @@ resource "aws_subnet" "demo-subnet-public"{
 resource "aws_subnet" "demo-subnet-private"{
     vpc_id = aws_vpc.demo-vpc.id
     cidr_block = "10.0.1.0/24"
-    availability_zone = "us-east-1a"
+    availability_zone = "us-east-1b"
 
     tags = {
         Name = "demo-subnet-private"
@@ -199,7 +199,7 @@ resource "aws_instance" "docker-instance"{
                 sudo sh get-docker.sh
                 cd /
                 sudo mkdir /nginx-content
-                sudo docker run -d -p 80:80 -v /nginx-content:/usr/share/nginx/html --name web nginx:latest
+                sudo docker run -d -p 80:80 -v /nginx-content:/usr/share/nginx/html --name web nginx:1.18.0
                 EOF 
     
     tags = {
