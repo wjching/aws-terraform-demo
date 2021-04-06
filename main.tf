@@ -111,14 +111,31 @@ resource "aws_lb" "demo" {
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.allow_web_ssh.id]
-  subnets            = aws_subnet.demo-subnet-public.id
+  subnets            = [aws_subnet.demo-subnet-public.id]
 
   tags = {
     Environment = "demo"
   }
 }
 
-#ALB Forward Action Listener for HTTP
+#ALB Target Group for HTTP
+resource "aws_lb_target_group" "demo_http" {
+  name     = "demo-http-lb-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.demo-vpc.id
+
+}
+
+#ALB Target Group for SSH
+resource "aws_lb_target_group" "demo_ssh" {
+  name     = "demo-ssh-lb-tg"
+  port     = 22
+  protocol = "TCP"
+  vpc_id   = aws_vpc.demo-vpc.id
+}
+
+/* #ALB Forward Action Listener for HTTP
 resource "aws_lb_listener" "demo_http" {
   load_balancer_arn = aws_lb.demo.arn
   port              = "80"
@@ -140,35 +157,7 @@ resource "aws_lb_listener" "demo_ssh" {
     type             = "forward"
     target_group_arn = aws_lb_target_group.demo.arn
   }
-}
-
-#ALB Target Group for HTTP
-resource "aws_lb_target_group" "demo_http" {
-  name     = "demo-http-lb-tg"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.demo-vpc.id
-
-    health_check {
-    healthy_threshold   = 2
-    interval            = 30
-    protocol            = "HTTP"
-    unhealthy_threshold = 2
-  }
-
-  depends_on = [
-    aws_lb.demo
-  ]
-
-}
-
-#ALB Target Group for SSH
-resource "aws_lb_target_group" "demo_ssh" {
-  name     = "demo-ssh-lb-tg"
-  port     = 22
-  protocol = "TCP"
-  vpc_id   = aws_vpc.demo-vpc.id
-}
+} */
 
  #Register EC2 with ALB Target Group HTTP
 resource "aws_lb_target_group_attachment" "demo_http" {
@@ -189,7 +178,6 @@ resource "aws_network_interface" "docker-server-nic" {
   subnet_id       = aws_subnet.demo-subnet-private.id
   private_ips     = ["10.0.1.10"]
   security_groups = [aws_security_group.allow_web_ssh.id]
-
 }
 
 #Provision Ubuntu Server
@@ -204,13 +192,15 @@ resource "aws_instance" "docker-instance"{
       network_interface_id = aws_network_interface.docker-server-nic.id
     } 
 
-    /* user_data = <<-EOF
+    #User will inject custom index.html file once the Container is provisioned.
+     user_data = <<-EOF
                 #!/bin/bash
-                sudo apt update -y
-                sudo apt install apache2 -y
-                sudo systemctl start apache2
-                sudo bash -c 'echo my my first web server by WJ :) > /var/www/html/index.html'
-                EOF */
+                curl -fsSL get.docker.com -o get-docker.sh
+                sudo sh get-docker.sh
+                cd /
+                sudo mkdir /nginx-content
+                sudo docker run -d -p 80:80 -v /nginx-content:/usr/share/nginx/html --name web nginx:latest
+                EOF 
     
     tags = {
     Name = "docker-server"
