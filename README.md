@@ -3,7 +3,7 @@
 
 The following Terraform Files are used to provision the following Architecture.
 
-![demo-architecture-aws](https://user-images.githubusercontent.com/59917742/113586992-c91bc800-9660-11eb-8693-e5360b4a9073.JPG)
+![demo-architecture-aws](https://user-images.githubusercontent.com/59917742/113672711-a9c97d00-96ea-11eb-8549-394b1e3e0552.JPG)
 
 # It Spins up the list of Services: <h2>
 
