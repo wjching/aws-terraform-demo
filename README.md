@@ -16,3 +16,7 @@ The following Terraform Files are used to provision the following Architecture.
 7. Internet Gateway (Provide Internet access to and from public subnet)
 8. NAT Gateway (Provide Internet access to and afrom private subnet)
 9. EC2 Instances (bootstraped with docker to provision and configure ngix image)
+
+Be sure to always run the following command before executing this .tf file:
+$terraform init 
+
