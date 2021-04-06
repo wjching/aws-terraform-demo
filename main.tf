@@ -13,34 +13,6 @@ resource "aws_vpc" "demo-vpc" {
     }
 }
 
-#Create Internet Gateway
-resource "aws_internet_gateway" "demo-igw" {
-  vpc_id = aws_vpc.demo-vpc.id
-
-  tags = {
-    Name = "demo-igw"
-  }
-}
-
-#Create Route Table
-resource "aws_route_table" "demo-route-table" {
-  vpc_id = aws_vpc.demo-vpc.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.demo-igw.id
-  }
-
-  route {
-    ipv6_cidr_block        = "::/0"
-    gateway_id = aws_internet_gateway.demo-igw.id
-  }
-
-  tags = {
-    Name = "demo-rt"
-  }
-}
-
 #Create Public Subnet in VPC
 resource "aws_subnet" "demo-subnet-public"{
     vpc_id = aws_vpc.demo-vpc.id
@@ -63,26 +35,82 @@ resource "aws_subnet" "demo-subnet-private"{
     }
 }
 
-#Associate Subnet with Route Table
+#Provision Internet Gateway for internet access on Public Subnet
+resource "aws_internet_gateway" "demo-igw" {
+  vpc_id = aws_vpc.demo-vpc.id
+
+  tags = {
+    Name = "demo-igw"
+  }
+}
+
+#Provision NAT Gateway for internet access on Private Subnet
+resource "aws_nat_gateway" "gw" {
+  allocation_id = aws_eip.natgw.id
+  subnet_id     = aws_subnet.demo-subnet-public.id
+}
+
+#Create Route Table for Public Subnet
+resource "aws_route_table" "demo-route-table-public" {
+  vpc_id = aws_vpc.demo-vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.demo-igw.id
+  }
+
+  route {
+    ipv6_cidr_block        = "::/0"
+    gateway_id = aws_internet_gateway.demo-igw.id
+  }
+
+  tags = {
+    Name = "demo-rt-public-subnet"
+  }
+}
+
+#Create Route Table for Private Subnet
+resource "aws_route_table" "demo-route-table-private" {
+  vpc_id = aws_vpc.demo-vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.gw.id
+  }
+
+  tags = {
+    Name = "demo-rt-private-subnet"
+  }
+}
+
+#Associate Public Subnet with Public Route Table
 
 resource "aws_route_table_association" "a" {
   subnet_id      = aws_subnet.demo-subnet-public.id
-  route_table_id = aws_route_table.demo-route-table.id
+  route_table_id = aws_route_table.demo-route-table-public.id
+}
+
+#Associate Public Subnet with Private Route Table
+
+resource "aws_route_table_association" "b" {
+  subnet_id      = aws_subnet.demo-subnet-private.id
+  route_table_id = aws_route_table.demo-route-table-private.id
 }
 
 #Create Security Group
 
 resource "aws_security_group" "allow_web_ssh" {
   name        = "allow_web_ssh_traffic"
-  description = "Allow connection between ALB and target instance"
+  description = "Allow connection between NLB and target instance"
   vpc_id      = aws_vpc.demo-vpc.id
 
+#allow any inbound source for HTTP and SSH Connection from NLB to target instance.
   ingress {
     description = "HTTP"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["118.189.0.0/16","116.206.0.0/16","223.25.0.0/16"]
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
     ingress {
@@ -134,7 +162,7 @@ resource "aws_lb_target_group" "demo_ssh" {
   vpc_id   = aws_vpc.demo-vpc.id
 }
 
-#BLB Forward Action Listener for HTTP
+#NLB Forward Action Listener for HTTP
 resource "aws_lb_listener" "demo_http" {
   load_balancer_arn = aws_lb.demo.arn
   port              = "80"
@@ -146,7 +174,7 @@ resource "aws_lb_listener" "demo_http" {
   }
 }
 
-#ALB Forward Action Listener for SSH
+#NLB Forward Action Listener for SSH
 resource "aws_lb_listener" "demo_ssh" {
   load_balancer_arn = aws_lb.demo.arn
   port              = "22"
@@ -158,14 +186,14 @@ resource "aws_lb_listener" "demo_ssh" {
   }
 }
 
- #Register EC2 with ALB Target Group HTTP
+ #Register EC2 with NLB Target Group HTTP
 resource "aws_lb_target_group_attachment" "demo_http" {
   target_group_arn = aws_lb_target_group.demo_http.arn
   target_id        = aws_instance.docker-instance.id
   port             = 80
 }
 
-#Register EC2 with ALB Target Group SSH
+#Register EC2 with NLB Target Group SSH
 resource "aws_lb_target_group_attachment" "demo_ssh" {
   target_group_arn = aws_lb_target_group.demo_ssh.arn
   target_id        = aws_instance.docker-instance.id
@@ -182,12 +210,6 @@ resource "aws_network_interface" "docker-server-nic" {
 #EIP for NAT Gateway use
 resource "aws_eip" "natgw" {
   vpc      = true
-}
-
-#Provision NAT Gateway for internet access on Private Subnet
-resource "aws_nat_gateway" "gw" {
-  allocation_id = aws_eip.natgw.id
-  subnet_id     = aws_subnet.demo-subnet-private.id
 }
 
 #Provision Ubuntu Server
