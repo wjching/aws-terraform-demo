@@ -192,7 +192,7 @@ resource "aws_instance" "docker-instance"{
       network_interface_id = aws_network_interface.docker-server-nic.id
     } 
 
-    #User will inject custom index.html file once the Container is provisioned.
+    #User will inject custom index.html file once the Container is provisioned, otherwise there will be a 403 Forbidden Error
      user_data = <<-EOF
                 #!/bin/bash
                 curl -fsSL get.docker.com -o get-docker.sh
