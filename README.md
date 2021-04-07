@@ -3,7 +3,8 @@
 
 The following Terraform Files are used to provision the following Architecture.
 
-![demo-architecture-aws](https://user-images.githubusercontent.com/59917742/113672711-a9c97d00-96ea-11eb-8549-394b1e3e0552.JPG)
+![demo-architecture-aws](https://user-images.githubusercontent.com/59917742/113812053-f7ec8800-979f-11eb-9a6d-4971e02c68b9.JPG)
+
 
 # It Spins up the list of Services: <h2>
 
@@ -12,7 +13,7 @@ The following Terraform Files are used to provision the following Architecture.
 3. Route Table (Provide Routing between Internet Gateway and ALB, ALB to EC2 Instance)
 4. Security Groups (To allow specific TCP service ports to transmit and recieve its connection)
 5. EIP (Elastic IP)
-6. ALB (Application Load Balancer)
+6. NLB (Network Load Balancer), for listening TCP Port 22 and Port 80
 7. Internet Gateway (Provide Internet access to and from public subnet)
 8. NAT Gateway (Provide Internet access to and afrom private subnet)
 9. EC2 Instances (bootstraped with docker to provision and configure ngix image)
