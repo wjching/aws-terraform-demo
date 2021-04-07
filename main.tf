@@ -28,7 +28,7 @@ resource "aws_subnet" "demo-subnet-public"{
 resource "aws_subnet" "demo-subnet-private"{
     vpc_id = aws_vpc.demo-vpc.id
     cidr_block = "10.0.1.0/24"
-    availability_zone = "us-east-1b"
+    availability_zone = "us-east-1a"
 
     tags = {
         Name = "demo-subnet-private"
@@ -44,7 +44,7 @@ resource "aws_internet_gateway" "demo-igw" {
   }
 }
 
-#Provision NAT Gateway for internet access on Private Subnet
+#Provision NAT Gateway for internet access on Public Subnet
 resource "aws_nat_gateway" "gw" {
   allocation_id = aws_eip.natgw.id
   subnet_id     = aws_subnet.demo-subnet-public.id
@@ -60,7 +60,7 @@ resource "aws_route_table" "demo-route-table-public" {
   }
 
   route {
-    ipv6_cidr_block        = "::/0"
+    ipv6_cidr_block = "::/0"
     gateway_id = aws_internet_gateway.demo-igw.id
   }
 
@@ -216,7 +216,7 @@ resource "aws_eip" "natgw" {
 resource "aws_instance" "docker-instance"{
     ami = "ami-042e8287309f5df03"
     instance_type = "t2.micro"
-    availability_zone = "us-east-1b"
+    availability_zone = "us-east-1a"
     key_name = "demo-key"
 
      network_interface {
