@@ -28,7 +28,7 @@ resource "aws_subnet" "demo-subnet-public"{
 resource "aws_subnet" "demo-subnet-private"{
     vpc_id = aws_vpc.demo-vpc.id
     cidr_block = "10.0.1.0/24"
-    availability_zone = "us-east-1b"
+    availability_zone = "us-east-1a"
 
     tags = {
         Name = "demo-subnet-private"
@@ -216,7 +216,7 @@ resource "aws_eip" "natgw" {
 resource "aws_instance" "docker-instance"{
     ami = "ami-042e8287309f5df03"
     instance_type = "t2.micro"
-    availability_zone = "us-east-1b"
+    availability_zone = "us-east-1a"
     key_name = "demo-key"
 
      network_interface {
