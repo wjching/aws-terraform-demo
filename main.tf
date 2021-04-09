@@ -226,6 +226,8 @@ resource "aws_instance" "docker-instance"{
 
     #User will inject custom index.html file once the Container is provisioned, otherwise there will be a 403 Forbidden Error.
     #User to upload index.html file to /nginx-content to preview http content.
+    #Below Bash Script will provision Docker Software ontop of Ubuntu Server and provision NGINX Version 1.18.0
+    #nginx container directory >> /usr/share/nginx/html, will be mounted to /nginx-content of root folder on ubuntu server
      user_data = <<-EOF
                 #!/bin/bash
                 curl -fsSL get.docker.com -o get-docker.sh
@@ -239,3 +241,5 @@ resource "aws_instance" "docker-instance"{
     Name = "docker-server"
     }
 } 
+
+
